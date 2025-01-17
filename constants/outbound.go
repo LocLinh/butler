@@ -22,6 +22,7 @@ const (
 )
 
 const (
+	OUTBOUND_ORDER_CONFIG_DESIGNATE_DATE         = 2097152
 	OUTBOUND_ORDER_CONFIG_NOT_ENOUGH_QTY         = 1     // Not enough quantity
 	OUTBOUND_ORDER_CONFIG_NOT_VERIFIED           = 2     // Đơn chưa được xác nhận
 	OUTBOUND_ORDER_CONFIG_HAS_REASON_DELAY       = 4     // Đơn bị delay

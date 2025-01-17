@@ -10,6 +10,7 @@ import (
 	cartHandler "butler/application/domains/cart/delivery/discord/handler"
 	kpiHandler "butler/application/domains/kpi/delivery/discord/handler"
 	pickHandler "butler/application/domains/pick/delivery/discord/handler"
+	pickPackHandler "butler/application/domains/pick_pack/delivery/discord/handler"
 	makersuiteHandler "butler/application/domains/promt_ai/makersuite/handler"
 	warehouseHandler "butler/application/domains/warehouse/delivery/discord/handler"
 
@@ -30,6 +31,7 @@ type commandHandler struct {
 	pickHandler       pickHandler.Handler
 	whHandler         warehouseHandler.Handler
 	kpiHandler        kpiHandler.Handler
+	pickPackHandler   pickPackHandler.Handler
 }
 
 func NewCommandHandler(
@@ -39,6 +41,7 @@ func NewCommandHandler(
 	cartHandler cartHandler.Handler,
 	pickHandler pickHandler.Handler,
 	whHandler warehouseHandler.Handler,
+	pickPackHandler pickPackHandler.Handler,
 ) Handler {
 	return &commandHandler{
 		discord:           discord,
@@ -47,6 +50,7 @@ func NewCommandHandler(
 		pickHandler:       pickHandler,
 		whHandler:         whHandler,
 		lib:               lib,
+		pickPackHandler:   pickPackHandler,
 	}
 }
 
@@ -76,6 +80,10 @@ func (c *commandHandler) GetCommandsHandler(s *discordgo.Session, m *discordgo.M
 
 	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_RESET_CART):
 		err = c.cartHandler.ResetCart(s, m)
+	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_RESET_CART_BY_USER_ID):
+		err = c.cartHandler.ResetCartByUserId(s, m)
+	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_RESET_CART_BY_EMAIL):
+		err = c.cartHandler.ResetCartByEmail(s, m)
 
 	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_READY_PICK):
 		err = c.pickHandler.ReadyPickOutbound(s, m)
@@ -84,13 +92,17 @@ func (c *commandHandler) GetCommandsHandler(s *discordgo.Session, m *discordgo.M
 
 	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_SHOW_WAREHOUSE):
 		err = c.whHandler.ShowWarehouse(s, m)
+	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_SHOW_WAREHOUSE_BY_ID):
+		err = c.whHandler.ShowWarehouseById(s, m)
 	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_RESET_SHOW_WAREHOUSE):
 		err = c.whHandler.ResetShowWarehouse(s, m)
-
+	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_RESET_SHOW_WAREHOUSE_BY_ID):
+		err = c.whHandler.ResetShowWarehouseById(s, m)
 	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_COUNT_KPI),
 		helper.CheckPrefixCommand(m.Content, constants.COMMAND_COUNT_PROD_KPI):
 		err = c.kpiHandler.CountKpi(s, m)
-
+	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_PICK_PACK):
+		err = c.pickPackHandler.ReadyPickPack(s, m)
 	case helper.CheckPrefixCommand(m.Content, constants.COMMAND_WH_CONFIG):
 		err = c.whHandler.ShowConfigWarehouse(s, m)
 	}

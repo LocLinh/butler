@@ -41,6 +41,20 @@ func HelpEmbed() *discordgo.MessageEmbed {
 				`,
 			},
 			{
+				Name: "reset tất cả giỏ của user_id",
+				Value: `
+                    !reset_cart_by_user_id <user_id>
+                    Example: !reset_cart_by_user_id 1609
+                `,
+			},
+			{
+				Name: "reset tất cả giỏ của email",
+				Value: `
+                    !reset_cart_by_email <email>
+                    Example: !reset_cart_by_email trieuld
+                `,
+			},
+			{
 				Name: "chuẩn bị cho đơn outbound có thể được đi pick",
 				Value: `
 					!readypick <mã source number>
@@ -55,10 +69,24 @@ func HelpEmbed() *discordgo.MessageEmbed {
 				`,
 			},
 			{
+				Name: "cho kho xuất hiện để đi pick ở vị trí kho 29 HOANG VIET",
+				Value: `
+					!show_warehouse_by_id <mã kho>
+					Eample: !show_warehouse_by_id 540
+				`,
+			},
+			{
 				Name: "reset vị trí của các kho bị đổi bởi lệnh !showwarehouse",
 				Value: `
 					!resetshowwarehouse
 					Eample: !resetshowwarehouse
+				`,
+			},
+			{
+				Name: "reset vị trí của một kho cụ thể bị đổi bởi lệnh !showwarehouse",
+				Value: `
+					!reset_show_warehouse_by_id <mã kho>
+					Eample: !reset_show_warehouse_by_id 540
 				`,
 			},
 			{

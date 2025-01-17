@@ -32,49 +32,69 @@ func InitUseCase(
 const LOCATION_ID_555 = 12
 const LOCATION_ID_29_HOANG_VIET = 382
 
-func (u *usecase) ShowWarehouse(ctx context.Context, params *models.ShowWarehouseRequest) error {
-	if params.WarehouseName == "" {
-		return fmt.Errorf("warehouse name is required")
-	}
-	warehouseNameKeyword := strings.ToUpper(params.WarehouseName)
-
-	suggestedWarehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{
-		WarehouseNameSimilar: warehouseNameKeyword,
-	})
-	if err != nil {
-		return err
-	}
-	if len(suggestedWarehouses) == 0 {
-		return fmt.Errorf("không có kho nào có tên giống [%s]", warehouseNameKeyword)
-	}
-	if len(suggestedWarehouses) > 1 {
-		var warehouseNames []string
-		for _, wh := range suggestedWarehouses {
-			warehouseNames = append(warehouseNames, wh.WarehouseName)
+func (u *usecase) ShowWarehouse(ctx context.Context, params *models.ShowWarehouseRequest) (err error) {
+	var warehouse *whModels.Warehouse
+	switch {
+	case params.WarehouseName != "":
+		warehouseNameKeyword := strings.ToUpper(params.WarehouseName)
+		suggestedWarehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{
+			WarehouseName: warehouseNameKeyword,
+		})
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("có nhiều kho có tên giống [%s], vui lòng nhập đúng tên: \n - %s", params.WarehouseName, strings.Join(warehouseNames, "\n- "))
-	}
-	warehouse := suggestedWarehouses[0]
-	if warehouse.LocationId == LOCATION_ID_555 {
-		return fmt.Errorf("kho [%s] đã có thể đi pick ở vị trí kho 555 3/2", warehouse.WarehouseName)
+		if len(suggestedWarehouses) == 0 {
+			return fmt.Errorf("không có kho nào có tên giống [%s]", warehouseNameKeyword)
+		}
+		if len(suggestedWarehouses) > 1 {
+			var warehouseNames []string
+			for _, wh := range suggestedWarehouses {
+				warehouseNames = append(warehouseNames, wh.WarehouseName)
+			}
+			return fmt.Errorf("có nhiều kho có tên giống [%s], vui lòng nhập đúng tên: \n - %s", params.WarehouseName, strings.Join(warehouseNames, "\n- "))
+		}
+		warehouse := suggestedWarehouses[0]
+		if warehouse.LocationId == LOCATION_ID_555 {
+			return fmt.Errorf("kho [%s] đã có thể đi pick ở vị trí kho 555 3/2", warehouse.WarehouseName)
+		}
+	case params.WarehouseId != 0:
+		warehouse, err = u.whSv.GetOne(ctx, &whModels.GetRequest{
+			WarehouseId: params.WarehouseId,
+		})
+		if err != nil {
+			return err
+		}
+		if warehouse.WarehouseId == 0 {
+			return fmt.Errorf("không tìm thấy kho")
+		}
+		if warehouse.LocationId == LOCATION_ID_555 {
+			return fmt.Errorf("kho [%s] đã có thể đi pick ở vị trí kho 555 3/2", warehouse.WarehouseName)
+		}
+	default:
+		return fmt.Errorf("Check lại lệnh, ví dụ: !showwarehouse <tên kho> hoặc !show_warehouse_by_id <warehouse_id>")
 	}
 
+	return u.updateLocationWarehouse(ctx, warehouse.WarehouseId, LOCATION_ID_555)
+
+}
+
+func (u *usecase) updateLocationWarehouse(ctx context.Context, warehouseId int64, locationId int64) error {
 	if _, err := u.whSv.Update(ctx, &whModels.Warehouse{
-		WarehouseId: warehouse.WarehouseId,
-		LocationId:  LOCATION_ID_555,
-		Description: fmt.Sprintf("location-%d", warehouse.LocationId),
+		WarehouseId: warehouseId,
+		LocationId:  locationId,
+		Description: fmt.Sprintf("location-%d", locationId),
 	}); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
-	warehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{})
+func (u *usecase) ResetShowWarehouse(ctx context.Context, warehouseId int64) (string, error) {
+	warehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{WarehouseId: warehouseId})
 	if err != nil {
-		return err
+		return "", err
 	}
+	whResetedName := []string{}
 	for _, warehouse := range warehouses {
 		if strings.Contains(warehouse.Description, "location-") {
 			subDesc := strings.Split(warehouse.Description, "-")
@@ -88,8 +108,9 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
 					"location_id": location,
 					"description": "",
 				}); err != nil {
-					return err
+					return "", err
 				}
+				whResetedName = append(whResetedName, fmt.Sprintf("%s,", warehouse.WarehouseName))
 			}
 		}
 	}
@@ -100,7 +121,7 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
 	key := fmt.Sprintf("ipaddress:warehouse:%s", currentIpAddr)
 	if value, err := u.lib.Rdb.Get(ctx, key).Result(); err == nil {
 		if value == "" {
-			return nil
+			return "", nil
 		}
 
 		if _, err := u.lib.Rdb.Del(ctx, key).Result(); err != nil {
@@ -108,5 +129,5 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	return strings.Join(whResetedName, "\n"), nil
 }

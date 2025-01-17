@@ -2,6 +2,7 @@ package models
 
 type ShowWarehouseRequest struct {
 	WarehouseName string
+	WarehouseId   int64
 }
 
 type UpdateConfigWarehouseRequest struct {

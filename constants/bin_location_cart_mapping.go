@@ -1,0 +1,6 @@
+package constants
+
+const (
+	BIN_LOCATION_CART_MAPPING_STATUS_USING int64 = iota + 1
+	BIN_LOCATION_CART_MAPPING_STATUS_FINISH
+)

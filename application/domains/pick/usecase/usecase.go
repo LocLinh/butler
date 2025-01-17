@@ -14,6 +14,7 @@ import (
 	pickingItemModel "butler/application/domains/services/picking_item/models"
 	pickingItemSv "butler/application/domains/services/picking_item/service"
 	"butler/application/lib"
+	"butler/constants"
 	"context"
 	"fmt"
 	"strings"
@@ -58,10 +59,10 @@ func (u *usecase) ReadyPickOutbound(ctx context.Context, params *models.ReadyPic
 		return fmt.Errorf("outbound order [%s] không ở trạng thái picklisted", params.SalesOrderNumber)
 	}
 	if outbound.Config != 0 {
-		if outbound.Config == 1 {
+		if outbound.Config&constants.OUTBOUND_ORDER_CONFIG_NOT_ENOUGH_QTY != 0 {
 			return fmt.Errorf("outbound order [%s] không đủ hàng đi pick", params.SalesOrderNumber)
 		}
-		return fmt.Errorf("outbound order [%s] không đủ điều kiện pick", params.SalesOrderNumber)
+
 	}
 
 	picking, err := u.pickingSv.GetOne(ctx, &pickingModel.GetRequest{OutboundOrderId: outbound.OutboundOrderId})
@@ -157,10 +158,10 @@ func (u *usecase) ReadyPickOutbound(ctx context.Context, params *models.ReadyPic
 
 	// update
 
-	if time.Until(outbound.CreatedAt).Abs().Minutes() < 10 {
+	if time.Until(outbound.CreatedAt).Abs().Minutes() < 30 {
 		if _, err := u.outboundOrderSv.Update(ctx, &outboundModel.OutboundOrder{
 			OutboundOrderId: outbound.OutboundOrderId,
-			CreatedAt:       outbound.CreatedAt.Add(-10 * time.Minute),
+			CreatedAt:       outbound.CreatedAt.Add(-30 * time.Minute),
 		}); err != nil {
 			return err
 		}
