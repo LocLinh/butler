@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"butler/application/domains/services/cart/models"
+	"butler/application/domains/services/bin_location_cart_mapping/models"
 	"context"
 	"fmt"
 
@@ -22,20 +22,20 @@ func (r *repo) dbWithContext(ctx context.Context) *gorm.DB {
 	return r.DB.WithContext(ctx)
 }
 
-func (r *repo) GetById(ctx context.Context, id int64) (*models.Cart, error) {
-	record := &models.Cart{}
+func (r *repo) GetById(ctx context.Context, id int64) (*models.BinLocationCartMapping, error) {
+	record := &models.BinLocationCartMapping{}
 	result := r.dbWithContext(ctx).Limit(1).Find(&record, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	if record.CartId == 0 {
+	if record.Id == 0 {
 		return nil, nil
 	}
 	return record, nil
 }
 
-func (r *repo) GetOne(ctx context.Context, params *models.GetRequest) (*models.Cart, error) {
-	record := &models.Cart{}
+func (r *repo) GetOne(ctx context.Context, params *models.GetRequest) (*models.BinLocationCartMapping, error) {
+	record := &models.BinLocationCartMapping{}
 	query := r.dbWithContext(ctx).Model(record)
 	query = r.filter(query, params)
 	result := query.Limit(1).Find(&record)
@@ -48,9 +48,9 @@ func (r *repo) GetOne(ctx context.Context, params *models.GetRequest) (*models.C
 	return record, nil
 }
 
-func (r *repo) GetList(ctx context.Context, params *models.GetRequest) ([]*models.Cart, error) {
-	records := []*models.Cart{}
-	query := r.dbWithContext(ctx).Model(&models.Cart{})
+func (r *repo) GetList(ctx context.Context, params *models.GetRequest) ([]*models.BinLocationCartMapping, error) {
+	records := []*models.BinLocationCartMapping{}
+	query := r.dbWithContext(ctx).Model(&models.BinLocationCartMapping{})
 	query = r.filter(query, params)
 
 	if err := query.Scan(&records).Error; err != nil {
@@ -60,8 +60,18 @@ func (r *repo) GetList(ctx context.Context, params *models.GetRequest) ([]*model
 	return records, nil
 }
 
-func (r *repo) Update(ctx context.Context, obj *models.Cart) (*models.Cart, error) {
-	if obj.CartId == 0 {
+func (r *repo) Create(ctx context.Context, obj *models.BinLocationCartMapping) (*models.BinLocationCartMapping, error) {
+	if obj.CartCode == "" {
+		return nil, fmt.Errorf("cart_code is required")
+	}
+	result := r.dbWithContext(ctx).Create(obj)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return obj, nil
+}
+func (r *repo) Update(ctx context.Context, obj *models.BinLocationCartMapping) (*models.BinLocationCartMapping, error) {
+	if obj.Id == 0 {
 		return nil, fmt.Errorf("cart id is required")
 	}
 	result := r.dbWithContext(ctx).Updates(obj)
@@ -71,7 +81,7 @@ func (r *repo) Update(ctx context.Context, obj *models.Cart) (*models.Cart, erro
 	return obj, nil
 }
 
-func (r *repo) UpdateMany(ctx context.Context, objs []*models.Cart) error {
+func (r *repo) UpdateMany(ctx context.Context, objs []*models.BinLocationCartMapping) error {
 	tx := r.dbWithContext(ctx).Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -91,8 +101,8 @@ func (r *repo) UpdateMany(ctx context.Context, objs []*models.Cart) error {
 }
 
 func (r *repo) filter(query *gorm.DB, params *models.GetRequest) *gorm.DB {
-	if params.CartId != 0 {
-		query = query.Where("cart_id = ?", params.CartId)
+	if params.Id != 0 {
+		query = query.Where("id = ?", params.Id)
 	}
 	if params.CartCode != "" {
 		query = query.Where("cart_code = ?", params.CartCode)
@@ -103,11 +113,13 @@ func (r *repo) filter(query *gorm.DB, params *models.GetRequest) *gorm.DB {
 	if params.Status != 0 {
 		query = query.Where("status = ?", params.Status)
 	}
-	if len(params.Statuses) != 0 {
-		query = query.Where("status in (?)", params.Statuses)
-	}
-	if params.UpdatedBy != 0 {
-		query = query.Where("updated_by = ?", params.UpdatedBy)
-	}
 	return query
+}
+
+func (r *repo) Delete(ctx context.Context, id int64) error {
+	result := r.dbWithContext(ctx).Delete(&models.BinLocationCartMapping{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }

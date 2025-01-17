@@ -30,4 +30,6 @@ type GetRequest struct {
 	CartCode    string
 	WarehouseId int64
 	Status      int64
+	Statuses    []int64
+	UpdatedBy   int64
 }

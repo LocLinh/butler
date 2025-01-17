@@ -50,11 +50,48 @@ func (h Handler) ResetShowWarehouse(s *discordgo.Session, m *discordgo.MessageCr
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 
-	if err := h.usecase.ResetShowWarehouse(ctx); err != nil {
+	warehouseNames, err := h.usecase.ResetShowWarehouse(ctx, 0)
+	if err != nil {
 		logrus.Errorf("Failed to reset show warehouse: %v", err)
 		return err
 	}
-	s.ChannelMessageSend(m.ChannelID, "reset show warehouse success!")
+	if warehouseNames == "" {
+		if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("All warehouses have been reset before!")); err != nil {
+			logrus.Errorf("Failed to send message: %v", err)
+		}
+	} else {
+		if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Reset show warehouse success: %s", warehouseNames)); err != nil {
+			logrus.Errorf("Failed to send message: %v", err)
+		}
+	}
+	return nil
+}
+
+func (h Handler) ResetShowWarehouseById(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
+	defer cancel()
+
+	reg := regexp.MustCompile(`[0-9]+`)
+	warehouseId := reg.FindString(m.Content)
+	warehouseIdInt, err := strconv.ParseInt(warehouseId, 10, 64)
+	if err != nil {
+		logrus.Errorf("Failed to parse warehouse id: %v", err)
+		return err
+	}
+	warehouseNames, err := h.usecase.ResetShowWarehouse(ctx, warehouseIdInt)
+	if err != nil {
+		logrus.Errorf("Failed to reset show warehouse: %v", err)
+		return err
+	}
+	if warehouseNames == "" {
+		if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Warehouse %d has been reset before!", warehouseIdInt)); err != nil {
+			logrus.Errorf("Failed to send message: %v", err)
+		}
+	} else {
+		if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Reset show warehouse success: %s", warehouseNames)); err != nil {
+			logrus.Errorf("Failed to send message: %v", err)
+		}
+	}
 	return nil
 }
 

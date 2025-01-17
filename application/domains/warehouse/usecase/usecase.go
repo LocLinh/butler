@@ -39,7 +39,7 @@ func (u *usecase) ShowWarehouse(ctx context.Context, params *models.ShowWarehous
 	warehouseNameKeyword := strings.ToUpper(params.WarehouseName)
 
 	suggestedWarehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{
-		WarehouseNameSimilar: warehouseNameKeyword,
+		WarehouseName: warehouseNameKeyword,
 	})
 	if err != nil {
 		return err
@@ -70,11 +70,12 @@ func (u *usecase) ShowWarehouse(ctx context.Context, params *models.ShowWarehous
 	return nil
 }
 
-func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
-	warehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{})
+func (u *usecase) ResetShowWarehouse(ctx context.Context, warehouseId int64) (string, error) {
+	warehouses, err := u.whSv.GetList(ctx, &whModels.GetRequest{WarehouseId: warehouseId})
 	if err != nil {
-		return err
+		return "", err
 	}
+	whResetedName := []string{}
 	for _, warehouse := range warehouses {
 		if strings.Contains(warehouse.Description, "location-") {
 			subDesc := strings.Split(warehouse.Description, "-")
@@ -88,8 +89,9 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
 					"location_id": location,
 					"description": "",
 				}); err != nil {
-					return err
+					return "", err
 				}
+				whResetedName = append(whResetedName, fmt.Sprintf("%s,", warehouse.WarehouseName))
 			}
 		}
 	}
@@ -100,7 +102,7 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
 	key := fmt.Sprintf("ipaddress:warehouse:%s", currentIpAddr)
 	if value, err := u.lib.Rdb.Get(ctx, key).Result(); err == nil {
 		if value == "" {
-			return nil
+			return "", nil
 		}
 
 		if _, err := u.lib.Rdb.Del(ctx, key).Result(); err != nil {
@@ -108,5 +110,5 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	return strings.Join(whResetedName, "\n"), nil
 }

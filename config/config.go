@@ -12,12 +12,13 @@ import (
 )
 
 type Config struct {
-	DiscordBot DiscordBot
-	Mysql      Mysql
-	Makersuite MakersuiteConfig
-	Redis      RedisConfig
-	KafkaQc    config.KafkaConfig
-	KafkaProd  config.KafkaConfig
+	DiscordBot  DiscordBot
+	Mysql       Mysql
+	Makersuite  MakersuiteConfig
+	Redis       RedisConfig
+	KafkaQc     config.KafkaConfig
+	KafkaProd   config.KafkaConfig
+	ApiExternal ApiExternalConfig
 }
 
 type Butler struct {
@@ -51,6 +52,24 @@ type MakersuiteConfig struct {
 	Endpoint string
 	ApiKey   string
 	Model    string
+}
+
+type ApiExternalConfig struct {
+	Wms     WmsConfig
+	Discord DiscordConfig
+}
+
+type WmsConfig struct {
+	Url      string
+	Email    string
+	Password string
+}
+
+type DiscordConfig struct {
+	Url      string
+	Login    string
+	Password string
+	Undelete bool
 }
 
 func GetConfig() (*Config, error) {
