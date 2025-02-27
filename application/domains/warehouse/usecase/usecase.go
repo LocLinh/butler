@@ -105,10 +105,12 @@ func (u *usecase) ResetShowWarehouse(ctx context.Context, warehouseId int64) (st
 				if location == 0 {
 					continue
 				}
-				if err := u.whSv.UpdateWithMap(ctx, warehouse.WarehouseId, map[string]any{
-					"location_id": location,
-					"description": "",
-				}); err != nil {
+				err := u.whSv.UpdateWithMap(ctx, warehouse.WarehouseId, map[string]any{
+					"warehouse_id": warehouse.WarehouseId,
+					"location_id":  0,
+					"description":  "",
+				})
+				if err != nil {
 					return "", err
 				}
 				whResetedName = append(whResetedName, fmt.Sprintf("%s,", warehouse.WarehouseName))
