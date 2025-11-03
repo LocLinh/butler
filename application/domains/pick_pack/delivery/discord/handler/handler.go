@@ -8,9 +8,7 @@ import (
 	"butler/config"
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
-	"strconv"
 	"time"
 
 	"strings"
@@ -30,55 +28,6 @@ func InitHandler(lib *lib.Lib, cfg *config.Config, services *initServices.Servic
 		lib:     lib,
 		usecase: usecase,
 	}
-}
-
-func (h Handler) ReadyPickPack(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	re := regexp.MustCompile(`\[([^\]]+)\]`)
-	matches := re.FindAllStringSubmatch(m.Content, -1)
-
-	if len(matches) < 4 {
-		return fmt.Errorf("Thiếu tham số. Vui lòng sử dụng: !runpickpack [email][password][mã đơn][mã vận chuyển]")
-	}
-
-	emailWms := matches[0][1]
-	passwordWms := matches[1][1]
-	shipmentNumber := matches[2][1]
-	shippingUnitId, err := strconv.ParseInt(matches[3][1], 10, 64)
-	if err != nil {
-		return fmt.Errorf("Mã vận chuyển không hợp lệ: %v", err)
-	}
-
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
-	defer cancel()
-	requestParams := &models.AutoPickPackRequest{
-		LoginRequest: models.LoginRequest{
-			LoginWmsRequest: models.LoginWmsRequest{
-				EmailWms:    emailWms,
-				PasswordWms: passwordWms,
-			},
-			LoginDiscordRequest: models.LoginDiscordRequest{
-				LoginDiscord:    h.lib.DiscordBot.Login,
-				PasswordDiscord: h.lib.DiscordBot.Password,
-				Undelete:        false,
-			},
-		},
-		SalesOrderNumber: shipmentNumber,
-		ShippingUnitId:   shippingUnitId,
-	}
-
-	_, err = h.usecase.AutoPickPack(ctx, *requestParams)
-	if err != nil {
-		logrus.Errorf("Failed ready pickpack: %v", err)
-		return err
-	}
-
-	_, err = s.ChannelMessageSend(m.ChannelID, "DONE: Run PICK PACK")
-	if err != nil {
-		logrus.Errorf("Failed to send message: %v", err)
-		return err
-	}
-
-	return nil
 }
 
 func (h Handler) PickPackKafka(s *discordgo.Session, m *discordgo.MessageCreate) error {

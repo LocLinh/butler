@@ -16,7 +16,6 @@ const (
 	COMMAND_PICK                            = "pick"
 	COMMAND_COUNT_KPI                       = "kpi"
 	COMMAND_COUNT_PROD_KPI                  = "prod kpi"
-	COMMAND_PICK_PACK                       = "runpickpack"
 	COMMAND_WH_CONFIG                       = "whcfg"
 	COMMAND_PICK_PACK_KAFKA                 = "ppkafka"
 	COMMAND_SET_VOUCHER_TYPE_OUTBOUND_ORDER = "set_voucher_type_outbound_order"
